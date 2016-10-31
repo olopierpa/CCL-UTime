@@ -15,9 +15,14 @@
 (defconstant precise-time-units-per-second (expt 10 9))
 
 (defconstant universal-time-epoch-in-precise-time
-  #+Windows 9435484800000000000 ; Fictional nanoseconds from 1601-01-01 to 1900-01-01.
-  #-Windows -2208988800000000000 ; Assuming 1970-01-01. To be verified.
-  )
+  (loop for ut1 = (get-universal-time)
+     for pt = (ccl:current-time-in-nanoseconds)
+     for ut2 = (get-universal-time)
+     until (= ut1 ut2)
+     finally (return (* (- (truncate pt precise-time-units-per-second) ut1)
+                        precise-time-units-per-second))))
+
+;;  #+Windows 9435484800000000000 ; Fictional nanoseconds from 1601-01-01 to 1900-01-01.
 
 (declaim (ftype (function () (unsigned-byte 64))
                 current-nanoseconds-since-1900))
