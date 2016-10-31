@@ -22,8 +22,6 @@
      finally (return (* (- (truncate pt precise-time-units-per-second) ut1)
                         precise-time-units-per-second))))
 
-;;  #+Windows 9435484800000000000 ; Fictional nanoseconds from 1601-01-01 to 1900-01-01.
-
 (declaim (ftype (function () (unsigned-byte 64))
                 current-nanoseconds-since-1900))
 
