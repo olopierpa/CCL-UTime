@@ -8,11 +8,11 @@
            #:get-universal-time-f  ; long-float universal-time
            ))
 
-(in-package :Time)
+(in-package :UTime)
 
 (declaim (optimize speed (safety 1) (debug 0) (space 0)))
 
-(defconstant precise-time-units-per-second #.(expt 10 9))
+(defconstant precise-time-units-per-second (expt 10 9))
 
 (defconstant universal-time-epoch-in-precise-time
   #+Windows 9435484800000000000 ; Fictional nanoseconds from 1601-01-01 to 1900-01-01.
