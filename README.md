@@ -47,7 +47,8 @@ which is also true for CL:GET-UNIVERSAL-TIME.
 
   If maximum accuracy is desired use one of the other functions.
 
-  >  (multiple-value-bind (s ns) (get-universal-time-ii)
-  >    (let ((utf (get-universal-time-f)))
-  >      (format t "~D.~9,'0D~%" s ns)       ; Maximum resolution.
-  >      (format t "~F~%" utf)))             ; A few bits are lost.
+  ```(multiple-value-bind (s ns) (get-universal-time-ii)
+       (let ((utf (get-universal-time-f)))
+         (format t "~D.~9,'0D~%" s ns)       ; Maximum resolution.
+         (format t "~F~%" utf)))             ; A few bits are lost.
+  ```
