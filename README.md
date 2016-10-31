@@ -10,29 +10,29 @@ which is also true for CL:GET-UNIVERSAL-TIME.
 
 ---
 
-* current-nanoseconds-since-1900
+* (current-nanoseconds-since-1900)
 
   What the name says.
 
-* get-universal-time-ii
+* (get-universal-time-ii)
 
   Returns two values, the first value is the same as
   cl:get-universal-time, the second value is a fraction of second
   expressed as an integer number of nanoseconds.
 
-* get-universal-time-ir
+* (get-universal-time-ir)
 
   Returns two values, the first value is the same as
   cl:get-universal-time, the second value is a fraction of second
   expressed as a rational.
 
-* get-universal-time-if
+* (get-universal-time-if)
 
   Returns two values, the first value is the same as
   cl:get-universal-time, the second value is a fraction of second
   expressed as a long-float.
 
-* get-universal-time-f
+* (get-universal-time-f)
 
   Universal time as a long-float with precision of either the precision
   returned by ccl:current-time-in-nanoseconds or the precision allowed
