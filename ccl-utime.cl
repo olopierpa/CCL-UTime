@@ -5,6 +5,7 @@
            #:get-universal-time-ii ; integer universal-time, integer nanoseconds
            #:get-universal-time-ir ; integer universal-time, rational fraction of second
            #:get-universal-time-if ; integer universal-time, long-float fraction of second
+           #:get-universal-time-r  ; rational universal-time
            #:get-universal-time-f  ; long-float universal-time
            ))
 
@@ -43,8 +44,17 @@
 ;; additional nanoseconds
 (defun get-universal-time-ii ()
   (declare (optimize speed (safety 0) (debug 0)))
-  (floor (current-nanoseconds-since-1900) precise-time-units-per-second))
+  (multiple-value-bind (s ns)
+      (floor (ccl:current-time-in-nanoseconds) precise-time-units-per-second)
+    (values (- s #.(/ universal-time-epoch-in-precise-time precise-time-units-per-second))
+            ns)))
 
+#| 
+;; Slower. Allocates more (96 bytes vs 80 bytes).
+(defun get-universal-time-ii ()
+  (declare (optimize speed (safety 0) (debug 0)))
+  (floor (current-nanoseconds-since-1900) precise-time-units-per-second))
+|#
 
 (declaim (ftype
           (function () (values
@@ -58,10 +68,19 @@
 (defun get-universal-time-ir ()
   (declare (optimize speed (safety 0) (debug 0)))
   (multiple-value-bind (seconds fraction)
+      (floor (ccl:current-time-in-nanoseconds) precise-time-units-per-second)
+    (values (- seconds #.(/ universal-time-epoch-in-precise-time precise-time-units-per-second))
+            (/ fraction precise-time-units-per-second))))
+
+#|
+;; Slower. Allocates more (128 bytes vs 112 bytes)
+(defun get-universal-time-ir ()
+  (declare (optimize speed (safety 0) (debug 0)))
+  (multiple-value-bind (seconds fraction)
       (floor (current-nanoseconds-since-1900) precise-time-units-per-second)
     (values seconds
             (/ fraction precise-time-units-per-second))))
-
+|#
 
 (declaim (ftype
           (function () (values
@@ -75,10 +94,41 @@
 (defun get-universal-time-if ()
   (declare (optimize speed (safety 0) (debug 0)))
   (multiple-value-bind (seconds fraction)
+      (floor (ccl:current-time-in-nanoseconds) precise-time-units-per-second)
+    (values (- seconds #.(/ universal-time-epoch-in-precise-time precise-time-units-per-second))
+            (/ (float fraction 1l0)
+               #.(float precise-time-units-per-second 1l0)))))
+
+#|
+Slower. Allocate more.
+
+(defun get-universal-time-if ()
+  (declare (optimize speed (safety 0) (debug 0)))
+  (multiple-value-bind (seconds fraction)
       (floor (current-nanoseconds-since-1900) precise-time-units-per-second)
     (values seconds
             (/ (float fraction 1l0)
                #.(float precise-time-units-per-second 1l0)))))
+
+(defun get-universal-time-if ()
+  (declare (optimize speed (safety 0) (debug 0)))
+  (multiple-value-bind (seconds fraction)
+      (floor (ccl:current-time-in-nanoseconds) precise-time-units-per-second)
+    (values (- seconds #.(/ universal-time-epoch-in-precise-time precise-time-units-per-second))
+            (float (/ fraction
+                      precise-time-units-per-second)
+                   1l0))))
+|#
+
+(declaim (ftype (function () (rational (0)))
+                get-universal-time-r))
+
+(declaim (inline get-universal-time-r))
+
+(defun get-universal-time-r ()
+  (declare (optimize speed (safety 0) (debug 0)))
+  (/ (current-nanoseconds-since-1900)
+     precise-time-units-per-second))
 
 
 (declaim (ftype (function () (long-float (0l0)))
@@ -93,7 +143,11 @@
 ;; (e.g. CCL on Windows), in the the 21st century and beyond, the
 ;; limiting factor is the precision of the float. That is, all of the
 ;; digits of the float are significative and a little bit of
-;; additional resolution is lost (about 2 bits, in 2016).
+;; additional resolution is lost (about 2 bits, in 2016):
+;; 
+;; (- (log (/ (current-nanoseconds-since-1900) 100) 2l0)
+;;    (float-digits 1l0))
+;; 2.0332794619791557D0
 ;; 
 ;; If maximum accuracy is desired use one of the other functions.
 ;; 
@@ -103,9 +157,8 @@
 ;;     (format t "~F~%" utf)))             ; A few bits are lost.
 
 (defun get-universal-time-f ()
-  (declare (optimize speed (safety 0) (debug 0)))
-  (/ (float (current-nanoseconds-since-1900) 1l0)
-     #.(float precise-time-units-per-second 1l0)))
+  (declare (optimize speed (safety 0) (debug 0) (space 0)))
+  (float (get-universal-time-r) 1l0))
 
 ;;; ====(Sun Oct 30 02:40:20 2016)==================================
 
@@ -113,35 +166,17 @@
 
 ;; In CCL Windows X8664:
 ;; CCL:CURRENT-TIME-IN-NANOSECONDS allocates 32 bytes.
-;; GET-UNIVERSAL-TIME-II allocates 96 bytes.
-;; GET-UNIVERSAL-TIME-IR allocates 128 bytes.
-;; GET-UNIVERSAL-TIME-IF allocates 128 bytes.
-;; GET-UNIVERSAL-TIME-F allocates 96 bytes.
-
-(defun test (&optional (seconds 3))
-  (declare (optimize speed (safety 0)))
-  (loop with start-time = (get-universal-time)
-     with end-time = (+ start-time seconds)
-     with diffs of-type fixnum = 0
-     for counter of-type fixnum from 0
-     for universal-time of-type integer = (get-universal-time)
-     while (< universal-time end-time)
-     do (multiple-value-bind (ut* nano) (get-universal-time-ii)
-          (declare (type integer ut* nano))
-          (unless (= universal-time ut*)
-            (format t ";; diff: ~S ~S ~S~%" universal-time ut* nano)
-            (incf diffs)
-            (when (> diffs 10)
-              (loop-finish))))
-     finally (return (list counter diffs))))
+;; CURRENT-NANOSECONDS-SINCE-1900 allocates 32 bytes.
+;; GET-UNIVERSAL-TIME-II allocates 80 bytes.
+;; GET-UNIVERSAL-TIME-IR allocates 112 bytes.
+;; GET-UNIVERSAL-TIME-IF allocates 112 bytes.
+;; GET-UNIVERSAL-TIME-R allocates 32 bytes.
+;; GET-UNIVERSAL-TIME-F allocates 176 bytes.
 
 (defun demo ()
-  (loop for l in (list (multiple-value-list (get-universal-time))
-                       (multiple-value-list (get-universal-time-ii))
-                       (multiple-value-list (get-universal-time-ir))
-                       (multiple-value-list (get-universal-time-if))
-                       (multiple-value-list (get-universal-time-f)))
-     do (print l)))
+  (loop for fun in '(get-universal-time get-universal-time-ii get-universal-time-ir
+                     get-universal-time-if get-universal-time-r get-universal-time-f)
+     collect (list fun (multiple-value-list (funcall fun)))))
 
 |#
 

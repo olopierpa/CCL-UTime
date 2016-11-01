@@ -1,5 +1,5 @@
 
-This file implements some variants of CL:GET-UNIVERSAL-TIME with
+This code implements some variants of CL:GET-UNIVERSAL-TIME with
 sub-second resolution for Clozure Common Lisp.
 
 The times returned are based on whatever the function
@@ -32,6 +32,10 @@ which is also true for CL:GET-UNIVERSAL-TIME.
   cl:get-universal-time, the second value is a fraction of second
   expressed as a long-float.
 
+* (get-universal-time-r)
+
+  Universal-time as a rational.
+
 * (get-universal-time-f)
 
   Universal time as a long-float with precision of either the precision
@@ -43,7 +47,11 @@ which is also true for CL:GET-UNIVERSAL-TIME.
   on Windows), in the the 21st century and beyond, the limiting factor
   is the precision of the float. That is, all of the digits of the
   float are significative and a little bit of additional resolution is
-  lost (about 2 bits, in 2016).
+  lost (about 2 bits, in 2016):
+
+      (- (log (/ (current-nanoseconds-since-1900) 100) 2l0)
+         (float-digits 1l0))
+      2.0332794619791557D0
 
   If maximum accuracy is desired use one of the other functions.
 
