@@ -11,7 +11,7 @@ which is also true for CL:GET-UNIVERSAL-TIME.
 ---
 
 * high-resolution-time-units-per-second
-  (get-high-resolution-real-time)
+* (get-high-resolution-real-time)
   
   Like CL:INTERNAL-TIME-UNITS-PER-SECOND and
   CL:GET-INTERNAL-REAL-TIME, but with higher resolution.
